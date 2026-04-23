@@ -186,10 +186,10 @@
                 <div class="badges">
                     <img src="https://img.shields.io/badge/platform-windows%2011-blue?style=for-the-badge" alt="platform">
                     <img src="https://img.shields.io/badge/location-chennai-brightgreen?style=for-the-badge" alt="location">
-                    <img src="https://img.shields.io/badge/repos-73-blue?style=for-the-badge" alt="repos">
-                    <img src="https://img.shields.io/badge/member%20since-2020-orange?style=for-the-badge" alt="since">
-                    <img src="https://img.shields.io/badge/gists-4-yellow?style=for-the-badge" alt="gists">
-                    <img src="https://img.shields.io/badge/contributions-1k%2B-lightgrey?style=for-the-badge" alt="contributions">
+                    <img id="badge-repos" src="https://img.shields.io/badge/repos-73-blue?style=for-the-badge" alt="repos">
+                    <img id="badge-since" src="https://img.shields.io/badge/member%20since-2020-orange?style=for-the-badge" alt="since">
+                    <img id="badge-gists" src="https://img.shields.io/badge/gists-4-yellow?style=for-the-badge" alt="gists">
+                    <img id="badge-commits" src="https://img.shields.io/badge/commits%20(last%20year)-774-lightgrey?style=for-the-badge" alt="commits">
                     <img src="https://img.shields.io/badge/CPU-i7--9750H-lightgrey?style=for-the-badge" alt="cpu">
                     <img src="https://img.shields.io/badge/RAM-16GB-lightgrey?style=for-the-badge" alt="ram">
                     <img src="https://img.shields.io/badge/shell-pwsh7-blue?style=for-the-badge" alt="shell">
@@ -253,8 +253,52 @@
         let currentCommitPage = 1;
         const commitsPerPage = 5;
 
-        function timeAgo(dateStr) {
-        const diff = (Date.now() - new Date(dateStr)) / 1000;
+        async function fetchGlobalStats() {
+            const CACHE_KEY = 'santarl_stats_cache';
+            const ONE_DAY = 24 * 60 * 60 * 1000;
+
+            const updateBadges = (data) => {
+                if (data.repos) document.getElementById('badge-repos').src = `https://img.shields.io/badge/repos-${data.repos}-blue?style=for-the-badge`;
+                if (data.gists) document.getElementById('badge-gists').src = `https://img.shields.io/badge/gists-${data.gists}-yellow?style=for-the-badge`;
+                if (data.since) document.getElementById('badge-since').src = `https://img.shields.io/badge/member%20since-${data.since}-orange?style=for-the-badge`;
+                if (data.commits) document.getElementById('badge-commits').src = `https://img.shields.io/badge/commits%20(last%20year)-${data.commits}-lightgrey?style=for-the-badge`;
+            };
+
+            try {
+                const cached = localStorage.getItem(CACHE_KEY);
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    if (Date.now() - parsed.timestamp < ONE_DAY) {
+                        updateBadges(parsed.data);
+                        return;
+                    }
+                }
+
+                // Fetch user profile
+                const userRes = await fetch('https://api.github.com/users/santarl');
+                const userData = await userRes.json();
+
+                // Fetch last year commit count
+                const lastYear = new Date();
+                lastYear.setFullYear(lastYear.getFullYear() - 1);
+                const dateStr = lastYear.toISOString().split('T')[0];
+                const commitRes = await fetch(`https://api.github.com/search/commits?q=author:santarl+author-date:>=${dateStr}`);
+                const commitData = await commitRes.json();
+
+                const stats = {
+                    repos: userData.public_repos,
+                    gists: userData.public_gists,
+                    since: new Date(userData.created_at).getFullYear(),
+                    commits: commitData.total_count || 0
+                };
+
+                updateBadges(stats);
+                localStorage.setItem(CACHE_KEY, JSON.stringify({ data: stats, timestamp: Date.now() }));
+
+            } catch (e) { console.error('Error fetching stats:', e); }
+        }
+
+        function timeAgo(dateStr) {        const diff = (Date.now() - new Date(dateStr)) / 1000;
         if (diff < 60)      return Math.floor(diff) + 's ago';
         if (diff < 3600)    return Math.floor(diff / 60) + 'm ago';
         if (diff < 86400)   return Math.floor(diff / 3600) + 'h ago';
@@ -328,6 +372,7 @@
 
         document.getElementById('btn-more').onclick = () => fetchCommits(true);
         fetchCommits();
+        fetchGlobalStats();
         </script>
 </body>
 </html>
