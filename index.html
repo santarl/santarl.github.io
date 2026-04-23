@@ -263,7 +263,7 @@
 
             const commits = [];
             for (const ev of events) {
-                if (ev.type !== 'PushEvent') continue;
+                if (ev.type !== 'PushEvent' || !ev.payload?.commits) continue;
                 for (const c of ev.payload.commits) {
                     commits.push({
                         sha:  c.sha.slice(0, 7),
