@@ -184,10 +184,25 @@
                 <h2 style="margin: 0; font-size: 20px;">santarl</h2>
                 <p style="margin: 2px 0; color: #444;">Installing Device Drivers...</p>
                 <div class="badges">
-                    <img src="https://img.shields.io/badge/platform-windows-blue?style=for-the-badge" alt="platform">
-                    <img src="https://img.shields.io/github/followers/santarl?label=followers&style=for-the-badge&color=555" alt="followers">
-                    <img src="https://img.shields.io/github/stars/santarl?label=stars&style=for-the-badge&color=orange&affiliations=OWNER" alt="stars">
+                    <img src="https://img.shields.io/badge/platform-windows%2011-blue?style=for-the-badge" alt="platform">
+                    <img src="https://img.shields.io/badge/location-chennai-brightgreen?style=for-the-badge" alt="location">
+                    <img src="https://img.shields.io/badge/repos-73-blue?style=for-the-badge" alt="repos">
+                    <img src="https://img.shields.io/badge/member%20since-2020-orange?style=for-the-badge" alt="since">
+                    <img src="https://img.shields.io/badge/gists-4-yellow?style=for-the-badge" alt="gists">
+                    <img src="https://img.shields.io/badge/contributions-1k%2B-lightgrey?style=for-the-badge" alt="contributions">
                 </div>
+            </div>
+        </div>
+
+        <!-- SYSTEM PROPERTIES -->
+        <div class="group-box">
+            <div class="group-label">System Properties</div>
+            <div style="font-size: 11px; line-height: 1.4; display: grid; grid-template-columns: 80px 1fr; gap: 4px;">
+                <span style="color: #444;">OS:</span> <span>Microsoft Windows 11 Pro</span>
+                <span style="color: #444;">Processor:</span> <span>Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz</span>
+                <span style="color: #444;">Memory:</span> <span>15.84 GB RAM</span>
+                <span style="color: #444;">Shell:</span> <span>PowerShell 7.x</span>
+                <span style="color: #444;">User:</span> <span>Atef @ DESKTOP-FA8HPEG</span>
             </div>
         </div>
 
@@ -213,7 +228,8 @@
             <div id="commits-list">
                 <p class="state-msg"><span class="loading-dots">Loading</span></p>
             </div>
-            <div style="margin-top: 10px; text-align: right;">
+            <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <button id="btn-more" class="btn" style="display: none;">More...</button>
                 <a href="https://github.com/santarl" class="btn" target="_blank" rel="noopener">View on GitHub</a>
             </div>
         </div>
@@ -223,45 +239,53 @@
             <a href="https://github.com/santarl" class="btn btn-primary" target="_blank" rel="noopener">GitHub Profile</a>
         </div>
 
-    </div>
-</div>
+        </div>
+        </div>
 
-<script>
-    // ── EASTER EGG (same cycling backgrounds as WinAutoScroll) ──
-    const bgColors = ['#008080','#3B6EA5','#000000','#800000','#2F4F4F','#000080'];
-    let colorIndex = 0;
-    try {
+        <script>
+        // ── EASTER EGG (same cycling backgrounds as WinAutoScroll) ──
+        const bgColors = ['#008080','#3B6EA5','#000000','#800000','#2F4F4F','#000080'];
+        let colorIndex = 0;
+        try {
         const saved = localStorage.getItem('win98-bg');
         if (saved) { const i = bgColors.indexOf(saved); if (i > -1) colorIndex = i; }
-    } catch(e) {}
-    document.getElementById('egg-trigger').onclick = function() {
+        } catch(e) {}
+        document.getElementById('egg-trigger').onclick = function() {
         colorIndex = (colorIndex + 1) % bgColors.length;
         const c = bgColors[colorIndex];
         document.body.style.setProperty('background-color', c, 'important');
         try { localStorage.setItem('win98-bg', c); } catch(e) {}
-    };
+        };
 
-    // ── COMMITS via GitHub API ──
-    function timeAgo(dateStr) {
+        // ── COMMITS via GitHub API ──
+        let currentCommitPage = 1;
+        const commitsPerPage = 5;
+
+        function timeAgo(dateStr) {
         const diff = (Date.now() - new Date(dateStr)) / 1000;
         if (diff < 60)      return Math.floor(diff) + 's ago';
         if (diff < 3600)    return Math.floor(diff / 60) + 'm ago';
         if (diff < 86400)   return Math.floor(diff / 3600) + 'h ago';
         if (diff < 2592000) return Math.floor(diff / 86400) + 'd ago';
         return new Date(dateStr).toLocaleDateString('en-GB', {day:'numeric', month:'short'});
-    }
+        }
 
-    function esc(s) {
+        function esc(s) {
         return String(s)
             .replace(/&/g,'&amp;').replace(/</g,'&lt;')
             .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
+        }
 
-    async function fetchCommits() {
+        async function fetchCommits(isMore = false) {
         const el = document.getElementById('commits-list');
+        const btnMore = document.getElementById('btn-more');
+
+        if (!isMore) el.innerHTML = '<p class="state-msg"><span class="loading-dots">Loading</span></p>';
+        btnMore.disabled = true;
+        btnMore.innerText = 'Loading...';
+
         try {
-            // Using search/commits to get actual commit messages across all public repos
-            const res = await fetch('https://api.github.com/search/commits?q=author:santarl&sort=author-date&order=desc&per_page=15', {
+            const res = await fetch(`https://api.github.com/search/commits?q=author:santarl&sort=author-date&order=desc&per_page=${commitsPerPage}&page=${currentCommitPage}`, {
                 headers: { 'Accept': 'application/vnd.github.cloak-preview' }
             });
             if (!res.ok) throw new Error('GitHub API returned ' + res.status);
@@ -275,28 +299,43 @@
                 date: item.commit.author.date
             }));
 
-            if (!items.length) {
+            if (!isMore) el.innerHTML = '';
+
+            if (items.length === 0 && !isMore) {
                 el.innerHTML = '<p class="state-msg">No recent public commits found.</p>';
-                return;
+            } else {
+                const html = items.map(c => `
+                    <a class="commit-row" href="${esc(c.url)}" target="_blank" rel="noopener">
+                        <div class="commit-sha-cell">${esc(c.sha)}</div>
+                        <div class="commit-body-cell">
+                            <span class="commit-repo-label">${esc(c.repo)}</span>
+                            <div class="commit-msg-text">${esc(c.msg)}</div>
+                        </div>
+                        <div class="commit-time-cell">${timeAgo(c.date)}</div>
+                    </a>
+                `).join('');
+                el.insertAdjacentHTML('beforeend', html);
             }
 
-            el.innerHTML = items.map(c => `
-                <a class="commit-row" href="${esc(c.url)}" target="_blank" rel="noopener">
-                    <div class="commit-sha-cell">${esc(c.sha)}</div>
-                    <div class="commit-body-cell">
-                        <span class="commit-repo-label">${esc(c.repo)}</span>
-                        <div class="commit-msg-text">${esc(c.msg)}</div>
-                    </div>
-                    <div class="commit-time-cell">${timeAgo(c.date)}</div>
-                </a>
-            `).join('');
+            // Show 'More' button if we got a full page
+            if (items.length === commitsPerPage) {
+                btnMore.style.display = 'inline-block';
+                btnMore.innerText = 'More...';
+                btnMore.disabled = false;
+            } else {
+                btnMore.style.display = 'none';
+            }
+
+            currentCommitPage++;
 
         } catch(err) {
-            el.innerHTML = `<p class="state-msg state-error">Error: ${esc(err.message)}</p>`;
+            if (!isMore) el.innerHTML = `<p class="state-msg state-error">Error: ${esc(err.message)}</p>`;
+            else alert('Error loading more commits: ' + err.message);
         }
-    }
+        }
 
-    fetchCommits();
-</script>
+        document.getElementById('btn-more').onclick = () => fetchCommits(true);
+        fetchCommits();
+        </script>
 </body>
 </html>
