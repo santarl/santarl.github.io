@@ -183,17 +183,8 @@
             <div>
                 <h2 style="margin: 0; font-size: 20px;">santarl</h2>
                 <p style="margin: 2px 0; color: #444;">Installing Device Drivers...</p>
-                <div class="badges">
-                    <img src="https://img.shields.io/badge/platform-windows%2011-blue?style=for-the-badge" alt="platform">
-                    <img src="https://img.shields.io/badge/location-chennai-brightgreen?style=for-the-badge" alt="location">
-                    <img id="badge-repos" src="https://img.shields.io/badge/repos-73-blue?style=for-the-badge" alt="repos">
-                    <img id="badge-since" src="https://img.shields.io/badge/member%20since-2020-orange?style=for-the-badge" alt="since">
-                    <img id="badge-gists" src="https://img.shields.io/badge/gists-4-yellow?style=for-the-badge" alt="gists">
-                    <img id="badge-commits" src="https://img.shields.io/badge/commits%20(last%20year)-774-lightgrey?style=for-the-badge" alt="commits">
-                    <img src="https://img.shields.io/badge/CPU-i7--9750H-lightgrey?style=for-the-badge" alt="cpu">
-                    <img src="https://img.shields.io/badge/RAM-16GB-lightgrey?style=for-the-badge" alt="ram">
-                    <img src="https://img.shields.io/badge/shell-pwsh7-blue?style=for-the-badge" alt="shell">
-                    <img src="https://img.shields.io/badge/user-atef-blueviolet?style=for-the-badge" alt="user">
+                <div id="badges-container" class="badges">
+                    <!-- Loaded from config.ini -->
                 </div>
             </div>
         </div>
@@ -201,16 +192,8 @@
         <!-- PROJECTS -->
         <div class="group-box">
             <div class="group-label">Projects</div>
-            <div style="margin-top: 8px;">
-                <a class="project-row" href="https://santarl.github.io/WinAutoScroll/" target="_blank" rel="noopener">
-                    <div class="project-icon">🖱️</div>
-                    <div class="project-info">
-                        <div class="project-name">WinAutoScroll <span class="project-tag">C++</span></div>
-                        <div class="project-desc">Lightweight middle-click auto-scrolling for any Windows app. &lt;30KB binary, 0% CPU idle.</div>
-                    </div>
-                    <div class="project-arrow">▶</div>
-                </a>
-                <!-- Copy the project-row block above to add more projects -->
+            <div id="projects-list" style="margin-top: 8px;">
+                <p class="state-msg"><span class="loading-dots">Loading</span></p>
             </div>
         </div>
 
@@ -231,91 +214,156 @@
             <a href="https://github.com/santarl" class="btn btn-primary" target="_blank" rel="noopener">GitHub Profile</a>
         </div>
 
-        </div>
-        </div>
+    </div>
+</div>
 
-        <script>
-        // ── EASTER EGG (same cycling backgrounds as WinAutoScroll) ──
-        const bgColors = ['#008080','#3B6EA5','#000000','#800000','#2F4F4F','#000080'];
-        let colorIndex = 0;
-        try {
+<script>
+    // ── EASTER EGG ──
+    const bgColors = ['#008080','#3B6EA5','#000000','#800000','#2F4F4F','#000080'];
+    let colorIndex = 0;
+    try {
         const saved = localStorage.getItem('win98-bg');
         if (saved) { const i = bgColors.indexOf(saved); if (i > -1) colorIndex = i; }
-        } catch(e) {}
-        document.getElementById('egg-trigger').onclick = function() {
+    } catch(e) {}
+    document.getElementById('egg-trigger').onclick = function() {
         colorIndex = (colorIndex + 1) % bgColors.length;
         const c = bgColors[colorIndex];
         document.body.style.setProperty('background-color', c, 'important');
         try { localStorage.setItem('win98-bg', c); } catch(e) {}
-        };
+    };
 
-        // ── COMMITS via GitHub API ──
-        let currentCommitPage = 1;
-        const commitsPerPage = 5;
-
-        async function fetchGlobalStats() {
-            const CACHE_KEY = 'santarl_stats_cache';
-            const ONE_DAY = 24 * 60 * 60 * 1000;
-
-            const updateBadges = (data) => {
-                if (data.repos) document.getElementById('badge-repos').src = `https://img.shields.io/badge/repos-${data.repos}-blue?style=for-the-badge`;
-                if (data.gists) document.getElementById('badge-gists').src = `https://img.shields.io/badge/gists-${data.gists}-yellow?style=for-the-badge`;
-                if (data.since) document.getElementById('badge-since').src = `https://img.shields.io/badge/member%20since-${data.since}-orange?style=for-the-badge`;
-                if (data.commits) document.getElementById('badge-commits').src = `https://img.shields.io/badge/commits%20(last%20year)-${data.commits}-lightgrey?style=for-the-badge`;
-            };
-
-            try {
-                const cached = localStorage.getItem(CACHE_KEY);
-                if (cached) {
-                    const parsed = JSON.parse(cached);
-                    if (Date.now() - parsed.timestamp < ONE_DAY) {
-                        updateBadges(parsed.data);
-                        return;
-                    }
-                }
-
-                // Fetch user profile
-                const userRes = await fetch('https://api.github.com/users/santarl');
-                const userData = await userRes.json();
-
-                // Fetch last year commit count
-                const lastYear = new Date();
-                lastYear.setFullYear(lastYear.getFullYear() - 1);
-                const dateStr = lastYear.toISOString().split('T')[0];
-                const commitRes = await fetch(`https://api.github.com/search/commits?q=author:santarl+author-date:>=${dateStr}`);
-                const commitData = await commitRes.json();
-
-                const stats = {
-                    repos: userData.public_repos,
-                    gists: userData.public_gists,
-                    since: new Date(userData.created_at).getFullYear(),
-                    commits: commitData.total_count || 0
-                };
-
-                updateBadges(stats);
-                localStorage.setItem(CACHE_KEY, JSON.stringify({ data: stats, timestamp: Date.now() }));
-
-            } catch (e) { console.error('Error fetching stats:', e); }
-        }
-
-        function timeAgo(dateStr) {        const diff = (Date.now() - new Date(dateStr)) / 1000;
+    // ── HELPERS ──
+    function esc(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function timeAgo(dateStr) {
+        const diff = (Date.now() - new Date(dateStr)) / 1000;
         if (diff < 60)      return Math.floor(diff) + 's ago';
         if (diff < 3600)    return Math.floor(diff / 60) + 'm ago';
         if (diff < 86400)   return Math.floor(diff / 3600) + 'h ago';
         if (diff < 2592000) return Math.floor(diff / 86400) + 'd ago';
         return new Date(dateStr).toLocaleDateString('en-GB', {day:'numeric', month:'short'});
-        }
+    }
 
-        function esc(s) {
-        return String(s)
-            .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-            .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-        }
+    // ── CONFIG PARSER ──
+    async function loadConfig() {
+        try {
+            const res = await fetch('config.ini');
+            if (!res.ok) throw new Error('Could not load config.ini');
+            const text = await res.text();
+            const lines = text.split('\n');
+            const sections = { badges: [], projects: [] };
+            let currentSection = null;
 
-        async function fetchCommits(isMore = false) {
+            for (let line of lines) {
+                line = line.trim();
+                if (!line || line.startsWith(';') || line.startsWith('#')) continue;
+                if (line.startsWith('[') && line.endsWith(']')) {
+                    currentSection = line.toLowerCase().slice(1, -1);
+                    continue;
+                }
+                if (currentSection === 'badges') {
+                    const parts = line.split('=');
+                    if (parts.length >= 2) {
+                        const label = parts[0].trim();
+                        const valParts = parts[1].split('|');
+                        sections.badges.push({
+                            label,
+                            color: valParts[0].trim(),
+                            value: valParts[1] ? valParts[1].trim() : null
+                        });
+                    }
+                } else if (currentSection === 'projects') {
+                    const parts = line.split('=');
+                    if (parts.length >= 2) {
+                        sections.projects.push({
+                            name: parts[0].trim(),
+                            desc: parts.slice(1).join('=').trim()
+                        });
+                    }
+                }
+            }
+            return sections;
+        } catch (e) {
+            console.error('Config error:', e);
+            return null;
+        }
+    }
+
+    // ── BADGES & STATS ──
+    async function initBadges(badgeConfigs) {
+        const container = document.getElementById('badges-container');
+        const CACHE_KEY = 'santarl_stats_cache';
+        const ONE_DAY = 24 * 60 * 60 * 1000;
+        
+        let stats = null;
+        const dynamicKeys = ['repos', 'since', 'gists', 'commits'];
+
+        const getStats = async () => {
+            const cached = localStorage.getItem(CACHE_KEY);
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Date.now() - parsed.timestamp < ONE_DAY) return parsed.data;
+            }
+            try {
+                const userRes = await fetch('https://api.github.com/users/santarl');
+                const userData = await userRes.json();
+                const lastYear = new Date();
+                lastYear.setFullYear(lastYear.getFullYear() - 1);
+                const commitRes = await fetch(`https://api.github.com/search/commits?q=author:santarl+author-date:>=${lastYear.toISOString().split('T')[0]}`);
+                const commitData = await commitRes.json();
+                const data = {
+                    repos: userData.public_repos,
+                    gists: userData.public_gists,
+                    since: new Date(userData.created_at).getFullYear(),
+                    commits: commitData.total_count || 0
+                };
+                localStorage.setItem(CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
+                return data;
+            } catch (e) { return null; }
+        };
+
+        const hasDynamic = badgeConfigs.some(b => !b.value && dynamicKeys.includes(b.label.toLowerCase()));
+        if (hasDynamic) stats = await getStats();
+
+        container.innerHTML = badgeConfigs.map(b => {
+            let val = b.value;
+            const lowLabel = b.label.toLowerCase();
+            if (!val && stats && dynamicKeys.includes(lowLabel)) {
+                val = stats[lowLabel];
+            }
+            if (!val) return '';
+            const labelEncoded = b.label.replace(/-/g, '--').replace(/ /g, '%20');
+            const valEncoded = String(val).replace(/-/g, '--').replace(/ /g, '%20');
+            return `<img src="https://img.shields.io/badge/${labelEncoded}-${valEncoded}-${b.color}?style=for-the-badge" alt="${esc(b.label)}">`;
+        }).join('');
+    }
+
+    // ── PROJECTS ──
+    function renderProjects(projects) {
+        const el = document.getElementById('projects-list');
+        if (!projects || projects.length === 0) {
+            projects = [{ name: 'WinAutoScroll', desc: 'Lightweight middle-click auto-scrolling for any Windows app.' }];
+        }
+        el.innerHTML = projects.map(p => `
+            <a class="project-row" href="https://santarl.github.io/${esc(p.name)}/" target="_blank" rel="noopener">
+                <div class="project-icon">🖱️</div>
+                <div class="project-info">
+                    <div class="project-name">${esc(p.name)}</div>
+                    <div class="project-desc">${esc(p.desc)}</div>
+                </div>
+                <div class="project-arrow">▶</div>
+            </a>
+        `).join('');
+    }
+
+    // ── COMMITS via GitHub API ──
+    let currentCommitPage = 1;
+    const commitsPerPage = 5;
+
+    async function fetchCommits(isMore = false) {
         const el = document.getElementById('commits-list');
         const btnMore = document.getElementById('btn-more');
-
         if (!isMore) el.innerHTML = '<p class="state-msg"><span class="loading-dots">Loading</span></p>';
         btnMore.disabled = true;
         btnMore.innerText = 'Loading...';
@@ -326,7 +374,6 @@
             });
             if (!res.ok) throw new Error('GitHub API returned ' + res.status);
             const data = await res.json();
-
             const items = data.items.map(item => ({
                 sha:  item.sha.slice(0, 7),
                 msg:  item.commit.message.split('\n')[0],
@@ -336,7 +383,6 @@
             }));
 
             if (!isMore) el.innerHTML = '';
-
             if (items.length === 0 && !isMore) {
                 el.innerHTML = '<p class="state-msg">No recent public commits found.</p>';
             } else {
@@ -352,27 +398,31 @@
                 `).join('');
                 el.insertAdjacentHTML('beforeend', html);
             }
-
-            // Show 'More' button if we got a full page
             if (items.length === commitsPerPage) {
                 btnMore.style.display = 'inline-block';
                 btnMore.innerText = 'More...';
                 btnMore.disabled = false;
-            } else {
-                btnMore.style.display = 'none';
-            }
-
+            } else { btnMore.style.display = 'none'; }
             currentCommitPage++;
-
         } catch(err) {
             if (!isMore) el.innerHTML = `<p class="state-msg state-error">Error: ${esc(err.message)}</p>`;
             else alert('Error loading more commits: ' + err.message);
         }
-        }
+    }
 
-        document.getElementById('btn-more').onclick = () => fetchCommits(true);
+    async function init() {
+        const config = await loadConfig();
+        if (config) {
+            initBadges(config.badges);
+            renderProjects(config.projects);
+        } else {
+            renderProjects(null);
+        }
         fetchCommits();
-        fetchGlobalStats();
-        </script>
+    }
+
+    document.getElementById('btn-more').onclick = () => fetchCommits(true);
+    init();
+</script>
 </body>
 </html>
