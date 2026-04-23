@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>santarl</title>
+
+    <script>
+        (function() {
+            try {
+                const savedColor = localStorage.getItem('win98-bg');
+                if (savedColor) {
+                    document.write(`<style>body { background-color: ${savedColor} !important; }</style>`);
+                }
+            } catch(e) {}
+        })();
+    </script>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: #008080;
+            font-family: "MS Sans Serif", Tahoma, sans-serif;
+            display: flex; justify-content: center; align-items: flex-start;
+            min-height: 100vh; margin: 0; padding: 20px;
+            transition: background-color 0.3s;
+        }
+
+        .window {
+            width: 100%; max-width: 900px; background: #c0c0c0;
+            border-top: 2px solid #dfdfdf; border-left: 2px solid #dfdfdf;
+            border-right: 2px solid #000; border-bottom: 2px solid #000;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+            display: flex; flex-direction: column;
+        }
+
+        .title-bar {
+            background: linear-gradient(90deg, #000080, #1084d0); padding: 3px 2px 3px 3px;
+            display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; margin: 2px;
+        }
+        .title-text { color: white; font-weight: bold; font-size: 14px; margin-left: 2px; letter-spacing: 0.5px; }
+        .btn-close {
+            background: #c0c0c0; width: 16px; height: 14px; font-size: 10px; line-height: 11px;
+            text-align: center; font-weight: bold; cursor: pointer; margin-right: 2px;
+            box-shadow: 1px 1px 0 #000; border-top: 1px solid #fff; border-left: 1px solid #fff;
+            border-right: 1px solid #000; border-bottom: 1px solid #000;
+        }
+        .btn-close:active { border-color: #000 #fff #fff #000; box-shadow: none; transform: translate(1px,1px); }
+
+        .window-body { padding: 15px; display: flex; flex-direction: column; gap: 15px; }
+
+        .header-container { display: flex; gap: 15px; align-items: flex-start; padding-bottom: 5px; }
+
+        .group-box {
+            border: 2px solid; border-color: #808080 #fff #fff #808080;
+            padding: 12px; position: relative; margin-top: 8px;
+        }
+        .group-label {
+            position: absolute; top: -10px; left: 10px;
+            background: #c0c0c0; padding: 0 5px; font-size: 12px;
+        }
+
+        .btn {
+            background: #c0c0c0;
+            border-top: 1px solid #fff; border-left: 1px solid #fff;
+            border-right: 2px solid #000; border-bottom: 2px solid #000;
+            box-shadow: 1px 1px 0 #000; padding: 6px 20px; color: black;
+            text-decoration: none; font-size: 13px; display: inline-block;
+            cursor: pointer; text-align: center; min-width: 90px; position: relative;
+            font-family: "MS Sans Serif", Tahoma, sans-serif;
+        }
+        .btn:hover::after {
+            content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px;
+            border: 1px dotted #000; pointer-events: none;
+        }
+        .btn:active {
+            border-top: 2px solid #000; border-left: 2px solid #000;
+            border-right: 1px solid #fff; border-bottom: 1px solid #fff;
+            box-shadow: none; transform: translate(1px,1px);
+        }
+        .btn:active::after { display: none; }
+        .btn-primary { font-weight: bold; }
+
+        .badges { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+        .badges img { height: 22px; max-width: 100%; }
+
+        p { margin: 0; font-size: 12px; }
+        ul { padding-left: 20px; margin: 5px 0; font-size: 12px; }
+        li { margin-bottom: 4px; }
+
+        .footer-container { display: flex; justify-content: flex-end; gap: 10px; margin-top: 5px; flex-wrap: wrap; }
+
+        /* ── PROJECT ROWS ── */
+        .project-row {
+            display: flex; align-items: stretch;
+            border: 2px solid; border-color: #808080 #fff #fff #808080;
+            margin-bottom: 6px; background: white; text-decoration: none; color: black;
+        }
+        .project-row:hover { outline: 1px dotted #000; outline-offset: -3px; }
+        .project-icon {
+            font-size: 20px; padding: 8px 10px; border-right: 1px solid #808080;
+            display: flex; align-items: center; background: #c0c0c0;
+        }
+        .project-info { padding: 6px 10px; flex: 1; }
+        .project-name { font-weight: bold; font-size: 12px; }
+        .project-tag {
+            font-size: 10px; background: #000080; color: white;
+            padding: 1px 6px; margin-left: 6px; vertical-align: middle;
+        }
+        .project-desc { color: #444; font-size: 11px; margin-top: 2px; }
+        .project-arrow { padding: 8px 10px; display: flex; align-items: center; color: #444; font-size: 12px; }
+
+        /* ── COMMITS ── */
+        #commits-list { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+
+        .commit-row {
+            display: flex; align-items: stretch;
+            border: 2px solid; border-color: #808080 #fff #fff #808080;
+            background: white; text-decoration: none; color: black;
+        }
+        .commit-row:hover { outline: 1px dotted #000; outline-offset: -3px; }
+
+        .commit-sha-cell {
+            font-family: "Courier New", monospace; font-size: 11px;
+            padding: 6px 8px; background: #000080; color: white;
+            min-width: 58px; display: flex; align-items: center; flex-shrink: 0;
+            border-right: 1px solid #000;
+        }
+        .commit-body-cell { padding: 6px 10px; flex: 1; min-width: 0; }
+        .commit-repo-label {
+            font-size: 10px; background: #c0c0c0;
+            border: 1px solid #808080; padding: 0 5px;
+            display: inline-block; margin-bottom: 2px;
+        }
+        .commit-msg-text { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .commit-time-cell {
+            font-size: 11px; color: #444; padding: 6px 8px;
+            border-left: 1px solid #c0c0c0; display: flex; align-items: center;
+            white-space: nowrap; flex-shrink: 0;
+        }
+
+        .state-msg { font-size: 12px; color: #444; font-family: "Courier New", monospace; padding: 6px 0; }
+        .state-error { color: #800000; }
+
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.2s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0%   { content: ''; }
+            25%  { content: '.'; }
+            50%  { content: '..'; }
+            75%  { content: '...'; }
+        }
+
+        @media (max-width: 600px) {
+            .header-container { flex-direction: column; align-items: center; text-align: center; }
+            .badges { justify-content: center; }
+            .footer-container { flex-direction: column; }
+            .btn { display: block; width: 100%; margin-bottom: 8px; }
+            .commit-time-cell { display: none; }
+        }
+    </style>
+</head>
+<body>
+<div class="window">
+    <div class="title-bar">
+        <div class="title-text">santarl — Profile</div>
+        <div class="btn-close" id="egg-trigger" title="Change Background">X</div>
+    </div>
+
+    <div class="window-body">
+
+        <!-- HEADER -->
+        <div class="header-container">
+            <img src="https://github.com/santarl.png" width="60" height="60"
+                 style="border: 2px solid; border-color: #808080 #fff #fff #808080; flex-shrink:0; display:block;"
+                 onerror="this.outerHTML='<span style=\'font-size:42px;line-height:1\'>👤</span>'" />
+            <div>
+                <h2 style="margin: 0; font-size: 20px;">santarl</h2>
+                <p style="margin: 2px 0; color: #444;">software developer · open source</p>
+                <div class="badges">
+                    <img src="https://img.shields.io/badge/platform-windows-blue?style=for-the-badge" alt="platform">
+                    <img src="https://img.shields.io/github/followers/santarl?label=followers&style=for-the-badge&color=555" alt="followers">
+                    <img src="https://img.shields.io/github/stars/santarl?label=stars&style=for-the-badge&color=orange&affiliations=OWNER" alt="stars">
+                </div>
+            </div>
+        </div>
+
+        <!-- PROJECTS -->
+        <div class="group-box">
+            <div class="group-label">Projects</div>
+            <div style="margin-top: 8px;">
+                <a class="project-row" href="https://santarl.github.io/WinAutoScroll/" target="_blank" rel="noopener">
+                    <div class="project-icon">🖱️</div>
+                    <div class="project-info">
+                        <div class="project-name">WinAutoScroll <span class="project-tag">C++</span></div>
+                        <div class="project-desc">Lightweight middle-click auto-scrolling for any Windows app. &lt;30KB binary, 0% CPU idle.</div>
+                    </div>
+                    <div class="project-arrow">▶</div>
+                </a>
+                <!-- Copy the project-row block above to add more projects -->
+            </div>
+        </div>
+
+        <!-- RECENT COMMITS -->
+        <div class="group-box">
+            <div class="group-label">Recent Public Commits</div>
+            <div id="commits-list">
+                <p class="state-msg"><span class="loading-dots">Loading</span></p>
+            </div>
+            <div style="margin-top: 10px; text-align: right;">
+                <a href="https://github.com/santarl" class="btn" target="_blank" rel="noopener">View on GitHub</a>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer-container">
+            <a href="https://github.com/santarl" class="btn btn-primary" target="_blank" rel="noopener">GitHub Profile</a>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // ── EASTER EGG (same cycling backgrounds as WinAutoScroll) ──
+    const bgColors = ['#008080','#3B6EA5','#000000','#800000','#2F4F4F','#000080'];
+    let colorIndex = 0;
+    try {
+        const saved = localStorage.getItem('win98-bg');
+        if (saved) { const i = bgColors.indexOf(saved); if (i > -1) colorIndex = i; }
+    } catch(e) {}
+    document.getElementById('egg-trigger').onclick = function() {
+        colorIndex = (colorIndex + 1) % bgColors.length;
+        const c = bgColors[colorIndex];
+        document.body.style.setProperty('background-color', c, 'important');
+        try { localStorage.setItem('win98-bg', c); } catch(e) {}
+    };
+
+    // ── COMMITS via GitHub API ──
+    function timeAgo(dateStr) {
+        const diff = (Date.now() - new Date(dateStr)) / 1000;
+        if (diff < 60)      return Math.floor(diff) + 's ago';
+        if (diff < 3600)    return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400)   return Math.floor(diff / 3600) + 'h ago';
+        if (diff < 2592000) return Math.floor(diff / 86400) + 'd ago';
+        return new Date(dateStr).toLocaleDateString('en-GB', {day:'numeric', month:'short'});
+    }
+
+    function esc(s) {
+        return String(s)
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    async function fetchCommits() {
+        const el = document.getElementById('commits-list');
+        try {
+            const res = await fetch('https://api.github.com/users/santarl/events/public?per_page=100');
+            if (!res.ok) throw new Error('GitHub API returned ' + res.status);
+            const events = await res.json();
+
+            const commits = [];
+            for (const ev of events) {
+                if (ev.type !== 'PushEvent') continue;
+                for (const c of ev.payload.commits) {
+                    commits.push({
+                        sha:  c.sha.slice(0, 7),
+                        msg:  c.message.split('\n')[0],
+                        repo: ev.repo.name.replace('santarl/', ''),
+                        url:  'https://github.com/' + ev.repo.name + '/commit/' + c.sha,
+                        date: ev.created_at
+                    });
+                    if (commits.length >= 15) break;
+                }
+                if (commits.length >= 15) break;
+            }
+
+            if (!commits.length) {
+                el.innerHTML = '<p class="state-msg">No recent public commits found.</p>';
+                return;
+            }
+
+            el.innerHTML = commits.map(c => `
+                <a class="commit-row" href="${esc(c.url)}" target="_blank" rel="noopener">
+                    <div class="commit-sha-cell">${esc(c.sha)}</div>
+                    <div class="commit-body-cell">
+                        <span class="commit-repo-label">${esc(c.repo)}</span>
+                        <div class="commit-msg-text">${esc(c.msg)}</div>
+                    </div>
+                    <div class="commit-time-cell">${timeAgo(c.date)}</div>
+                </a>
+            `).join('');
+
+        } catch(err) {
+            el.innerHTML = `<p class="state-msg state-error">Error: ${esc(err.message)}</p>`;
+        }
+    }
+
+    fetchCommits();
+</script>
+</body>
+</html>
