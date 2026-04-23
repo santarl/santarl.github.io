@@ -264,30 +264,61 @@
             if (!res.ok) throw new Error('GitHub API returned ' + res.status);
             const events = await res.json();
 
-            const commits = [];
+            const items = [];
             for (const ev of events) {
-                if (ev.type !== 'PushEvent' || !ev.payload?.commits) continue;
-                for (const c of ev.payload.commits) {
-                    commits.push({
-                        sha:  c.sha.slice(0, 7),
-                        msg:  c.message.split('\n')[0],
-                        repo: ev.repo.name.replace('santarl/', ''),
-                        url:  'https://github.com/' + ev.repo.name + '/commit/' + c.sha,
+                const repoName = ev.repo.name.replace('santarl/', '');
+                const repoUrl = 'https://github.com/' + ev.repo.name;
+
+                if (ev.type === 'PushEvent') {
+                    if (ev.payload?.commits && ev.payload.commits.length > 0) {
+                        for (const c of ev.payload.commits) {
+                            items.push({
+                                sha:  c.sha.slice(0, 7),
+                                msg:  c.message.split('\n')[0],
+                                repo: repoName,
+                                url:  repoUrl + '/commit/' + c.sha,
+                                date: ev.created_at
+                            });
+                        }
+                    } else if (ev.payload?.head) {
+                        // Fallback for PushEvent without commit array
+                        items.push({
+                            sha:  ev.payload.head.slice(0, 7),
+                            msg:  'Pushed to ' + repoName,
+                            repo: repoName,
+                            url:  repoUrl + '/commit/' + ev.payload.head,
+                            date: ev.created_at
+                        });
+                    }
+                } else if (ev.type === 'CreateEvent') {
+                    items.push({
+                        sha:  'NEW',
+                        msg:  `Created ${ev.payload.ref_type || 'repository'} ${ev.payload.ref || ''}`.trim(),
+                        repo: repoName,
+                        url:  repoUrl,
                         date: ev.created_at
                     });
-                    if (commits.length >= 15) break;
+                } else if (ev.type === 'WatchEvent') {
+                    items.push({
+                        sha:  'STAR',
+                        msg:  'Starred repository',
+                        repo: repoName,
+                        url:  repoUrl,
+                        date: ev.created_at
+                    });
                 }
-                if (commits.length >= 15) break;
+
+                if (items.length >= 15) break;
             }
 
-            if (!commits.length) {
-                el.innerHTML = '<p class="state-msg">No recent public commits found.</p>';
+            if (!items.length) {
+                el.innerHTML = '<p class="state-msg">No recent public activity found.</p>';
                 return;
             }
 
-            el.innerHTML = commits.map(c => `
+            el.innerHTML = items.map(c => `
                 <a class="commit-row" href="${esc(c.url)}" target="_blank" rel="noopener">
-                    <div class="commit-sha-cell">${esc(c.sha)}</div>
+                    <div class="commit-sha-cell" style="${c.sha === 'STAR' ? 'background:#c0c0c0;color:black' : ''}">${esc(c.sha)}</div>
                     <div class="commit-body-cell">
                         <span class="commit-repo-label">${esc(c.repo)}</span>
                         <div class="commit-msg-text">${esc(c.msg)}</div>
